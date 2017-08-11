@@ -104,12 +104,12 @@ HI_VOID	SAMPLE_COMM_VDEC_ChnAttr(HI_S32 s32ChnNum,
         pstVdecChnAttr[i].u32PicHeight = pstSize->u32Height;
         if (PT_H264 == enType || PT_MP4VIDEO == enType)
         {
-            pstVdecChnAttr[i].stVdecVideoAttr.enMode=VIDEO_MODE_STREAM;
-            pstVdecChnAttr[i].stVdecVideoAttr.u32RefFrameNum = 3;
-            pstVdecChnAttr[i].stVdecVideoAttr.bTemporalMvpEnable = 0;
-//            pstVdecChnAttr[i].stVdecVideoAttr.enMode=VIDEO_MODE_FRAME;
-//            pstVdecChnAttr[i].stVdecVideoAttr.u32RefFrameNum = 0;
+//            pstVdecChnAttr[i].stVdecVideoAttr.enMode=VIDEO_MODE_STREAM;
+//            pstVdecChnAttr[i].stVdecVideoAttr.u32RefFrameNum = 3;
 //            pstVdecChnAttr[i].stVdecVideoAttr.bTemporalMvpEnable = 0;
+            pstVdecChnAttr[i].stVdecVideoAttr.enMode=VIDEO_MODE_FRAME;
+            pstVdecChnAttr[i].stVdecVideoAttr.u32RefFrameNum = 0;
+            pstVdecChnAttr[i].stVdecVideoAttr.bTemporalMvpEnable = 0;
         }
         else if (PT_JPEG == enType || PT_MJPEG == enType)
         {
@@ -279,12 +279,9 @@ HI_VOID * SAMPLE_COMM_VDEC_SendStream(HI_VOID *pArgs)
     //FILE *fpStrm=NULL;
     //HI_U8 *pu8Buf = NULL;
     VDEC_STREAM_S stStream;
-    HI_BOOL bFindStart, bFindEnd;
-    HI_S32 s32Ret,  i,  start = 0;
-    HI_S32 s32UsedBytes = 0, s32ReadLen = 0;
+    HI_S32 s32Ret=0;
     HI_U64 u64pts = 0;
-    HI_S32 len;
-    HI_BOOL sHasReadStream = HI_FALSE; 
+    //printf("284 VDEC channel %d \n",pstVdecThreadParam->s32ChnId+1);
     //VIDEO_FRAME_INFO_S g_stFrameInfo;
 //    if(pstVdecThreadParam->cFileName != 0)
 //    {
@@ -301,9 +298,14 @@ HI_VOID * SAMPLE_COMM_VDEC_SendStream(HI_VOID *pArgs)
 //    {
 //        printf("pstVdecThreadParam->fpStrm  == NULL in send stream thread channel:%d\n", pstVdecThreadParam->s32ChnId+1);
 //    }
+    if(avformat_open_input(&pstVdecThreadParam->pFormatCtx,pstVdecThreadParam->RtspStr,NULL,&pstVdecThreadParam->options)!=0)////打开网络流或文件流
+    {
+       printf("460 Couldn't open input stream channel NO.%d.\n",pstVdecThreadParam->s32ChnId+1);
+    }
     if(pstVdecThreadParam->pFormatCtx  == NULL)
     {
         printf("pstVdecThreadParam->pFormatCtx  == NULL in send stream thread channel:%d\n", pstVdecThreadParam->s32ChnId+1);
+        return;
     }
     if(pstVdecThreadParam->s32ChnId>(Channel_Nums-1))
     {
@@ -326,7 +328,7 @@ HI_VOID * SAMPLE_COMM_VDEC_SendStream(HI_VOID *pArgs)
     /*start-----------------ffmpeg rtsp-----------------start */
 
 //    AVFormatContext	*pFormatCtx;
-    AVPacket *packet;
+//    AVPacket *packet;
 //    av_register_all();
 //    avformat_network_init();
 //    pFormatCtx = avformat_alloc_context();
@@ -341,7 +343,7 @@ HI_VOID * SAMPLE_COMM_VDEC_SendStream(HI_VOID *pArgs)
 //       printf("Couldn't open input stream channel NO.%d.\n",pstVdecThreadParam->s32ChnId+1);
 //       return -1;
 //    }
-    packet=(AVPacket *)av_malloc(sizeof(AVPacket));
+//    packet=(AVPacket *)av_malloc(sizeof(AVPacket));
 
     /*end-----------------ffmpeg rtsp-----------------end */
     while (1)
@@ -355,6 +357,7 @@ HI_VOID * SAMPLE_COMM_VDEC_SendStream(HI_VOID *pArgs)
         }
         if(pstVdecThreadParam->switchround==2)
         {
+            av_free_packet(pstVdecThreadParam->packet);
             break;
 
         }
@@ -389,8 +392,8 @@ HI_VOID * SAMPLE_COMM_VDEC_SendStream(HI_VOID *pArgs)
 //            }
 
 
-
-        int ret =av_read_frame(pstVdecThreadParam->pFormatCtx, packet);
+        //printf("391 VDEC channel %d \n",pstVdecThreadParam->s32ChnId+1);
+        int ret =av_read_frame(pstVdecThreadParam->pFormatCtx, pstVdecThreadParam->packet);
         if(ret>=0)
         {
 
@@ -398,7 +401,8 @@ HI_VOID * SAMPLE_COMM_VDEC_SendStream(HI_VOID *pArgs)
         else
         {
             printf("av_read_frame failed %d chnn %d\n",ret,pstVdecThreadParam->s32ChnId+1);
-
+            av_free_packet(pstVdecThreadParam->packet);
+            usleep(3000);
             continue;
         }
 //        stStream.u64PTS  = u64pts;
@@ -406,11 +410,12 @@ HI_VOID * SAMPLE_COMM_VDEC_SendStream(HI_VOID *pArgs)
 //        stStream.u32Len  = s32ReadLen;
 //        stStream.bEndOfFrame  = HI_FALSE;
 //        stStream.bEndOfStream = HI_FALSE;
-
+        //printf("409 VDEC channel %d \n",pstVdecThreadParam->s32ChnId+1);
 //ffmpeg rtsp
+
         stStream.u64PTS  = u64pts;
-        stStream.pu8Addr = packet->data;
-        stStream.u32Len  = packet->size;
+        stStream.pu8Addr = pstVdecThreadParam->packet->data;
+        stStream.u32Len  = pstVdecThreadParam->packet->size;
         stStream.bEndOfFrame  = HI_FALSE;
         stStream.bEndOfStream = HI_FALSE;
        //printf("start sending frame.. NO : %d\n",pstVdecThreadParam->s32ChnId+1);
@@ -427,24 +432,24 @@ HI_VOID * SAMPLE_COMM_VDEC_SendStream(HI_VOID *pArgs)
 //            s32UsedBytes = s32UsedBytes +s32ReadLen + start;
 //            u64pts += pstVdecThreadParam->u64PtsIncrease;
         }
-
+        //printf("430 VDEC channel %d \n",pstVdecThreadParam->s32ChnId+1);
         //printf("sending frame done.. NO : %d\n",pstVdecThreadParam->s32ChnId+1);
         usleep(1000);
         //sleep(5);
-
+    av_free_packet(pstVdecThreadParam->packet);
     }
-    av_free_packet(packet);
+    avformat_close_input(&pstVdecThreadParam->pFormatCtx);
     /* send the flag of stream end */
-   // memset(&stStream, 0, sizeof(VDEC_STREAM_S) );
-    //stStream.bEndOfStream = HI_TRUE;
-    //HI_MPI_VDEC_SendStream(pstVdecThreadParam->s32ChnId, &stStream, -1);
+//    memset(&stStream, 0, sizeof(VDEC_STREAM_S) );
+//    stStream.bEndOfStream = HI_TRUE;
+//    HI_MPI_VDEC_SendStream(pstVdecThreadParam->s32ChnId, &stStream, -1);
     
     //printf("SAMPLE_TEST:send steam thread %d return ...\n", pstVdecThreadParam->s32ChnId);
     fflush(stdout);
-    if (pu8Buf != HI_NULL)
-    {
-        free(pu8Buf);
-    }
+//    if (pu8Buf != HI_NULL)
+//    {
+//        free(pu8Buf);
+//    }
     //fclose(pstVdecThreadParam->fpStrm);
 	
     //return (HI_VOID *)HI_SUCCESS;

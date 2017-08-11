@@ -109,7 +109,7 @@ extern "C"{
 #define SAMPLE_AUDIO_AO_DEV 0
 
 #define SAMPLE_CIF_H264_PATH "../common/CIF.h264"
-#define SAMPLE_1080P_H264_PATH "/mnt/mydir/yangwenquan/lll/123.h264"
+#define SAMPLE_1080P_H264_PATH "/mnt/mydir/yangwenquan/lll/264file/1.h264"
 #define SAMPLE_1080P_H265_PATH "../common/1080P.h265"
 #define SAMPLE_4K_H264_PATH "../common/tmp1"
 #define SAMPLE_4K_H265_PATH "../common/tmp2"
@@ -275,6 +275,7 @@ typedef struct hiVdecThreadParam
     int switchround;
     AVFormatContext	*pFormatCtx;
     AVDictionary* options ;
+    AVPacket *packet;
 }VdecThreadParam;
 
 typedef enum hiAudioCodecType
