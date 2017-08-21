@@ -1,6 +1,8 @@
 说明：需要30路摄像机测试运行
-rtsp设置，在sample_vgs.c 444行开始设置
+rtsp设置，在sample_vgs.c 515行开始设置
 在parm.h里面设置路数 Channel_Nums为总通道数量 batch为绑定通道数量（一般设置15）
 在sample_vgs.c 84行get2process里面循环取帧转换识别
 在sample_comm_vdec.c 275行开始不断往不同通道发送数据
 目前测试读取识别h264文件已经基本没有问题，代码已修改为使用ffmpeg读取rtsp帧解码网络摄像机模式，需要实际测试。
+此版本去掉了opencv，需要用其他方式存储一下图片，供解码轮询参考。
+ffmpeg 的版本为3.3.2

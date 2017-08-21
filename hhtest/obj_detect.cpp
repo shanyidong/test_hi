@@ -10,13 +10,18 @@ using namespace cv;
 
 //    }
 
-    int detectRun(CvMat* frame,int* detectNum)
+    int detectRun(CvMat* frame,int* detectNum,char* path)
     {
 #ifndef Cascade
 #define Cascade
+        if(strlen(path)>0)
+        {
+            //imwrite(path,frame);
+            //cvSaveImage(path,frame);
+        }
         CascadeClassifier cascade;
         string cascadeName;
-        cascadeName = "model//cascade-lbp8.xml";
+        cascadeName = "model//cascade-ped-HOG_Classfier_DAB-2.xml";
         //printf("load cascade ..\n");
         if (!cascade.load(cascadeName))
         {
@@ -96,14 +101,17 @@ using namespace cv;
     vector<Rect> objs_out;
         objs_out=objs;
         *detectNum=objs_out.size();
-    if (*detectNum>1)
+    if (*detectNum>0)
     {
         for (size_t i = 0; i < objs_out.size(); i++)
         {
             Rect r = objs_out[i];
             rectangle(frame1, r, Scalar(255, 0, 0));
         }
-        //imwrite("objs_out.jpg",frame1);
+        if(strlen(path)>0)
+        {
+        //imwrite(path,frame1);
+        }
 
     }
         return *detectNum;

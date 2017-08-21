@@ -15,9 +15,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#include "cv.h"
-#include "highgui.h"
-#include "cxcore.h"
+//#include "cv.h"
+//#include "highgui.h"
+//#include "cxcore.h"
 #include "sample_comm.h"
 #include "mpi_vgs.h"
 #include "libavcodec/avcodec.h"
@@ -50,7 +50,7 @@ VdecThreadParam* getVdecThreadParam(int chnn)
 }
 
 /******************************************************************************
-* function : to process abnormal case                                         
+* function : to process abnormal case
 ******************************************************************************/
 void SAMPLE_VGS_HandleSig(HI_S32 signo)
 {
@@ -98,6 +98,7 @@ void Get2Process(int chn)
         VGS_HANDLE hHandle;
         SAMPLE_MEMBUF_S g_stMem;
         g_stMem.hPool = hPool;
+        int waittimes=0;
         //VIDEO_FRAME_INFO_S stFrameInfo;
         VGS_TASK_ATTR_S stTask;
         VdecThreadParam *Param =&stVdecSend[n_channel];
@@ -123,20 +124,27 @@ void Get2Process(int chn)
 
         VDEC_CHN_STAT_S pstStat;
         //printf("123 channel %d \n",Param->s32ChnId+1);
-        //printf("starting get image NO : %d round: %d\n",Param->s32ChnId+1,i+1);
+
 
         while(1)
         {
             p++;
-            HI_BOOL s32Ret = HI_MPI_VDEC_GetImage(chn_bind, &g_stFrameInfo, 2000);
+            //printf("starting get image NO : %d chn_bind: %d\n",Param->s32ChnId+1,chn_bind);
+            HI_BOOL s32Ret = HI_MPI_VDEC_GetImage(chn_bind, &g_stFrameInfo, 200);
             if(s32Ret != HI_SUCCESS)
             {
+
+                Param->switchround=1;
                 SAMPLE_PRT("get vdec image failed NO : %d round: %d error : %d\n",Param->s32ChnId+1,i+1,s32Ret);
+                waittimes++;
                 //Param->Sending=HI_FALSE;
                 usleep(1000);
-                continue;
+
+                    continue;
+
                 //return;
             }
+            Param->switchround=2;
             if(p%1==0)//4
             {
                 break;
@@ -185,7 +193,7 @@ void Get2Process(int chn)
         //printf("getimage done NO : %d round: %d\n",Param->s32ChnId+1,i+1);
         //printf("146 channel %d \n",Param->s32ChnId+1);
         Param->Sending=HI_FALSE;
-        Param->switchround=2;
+
         //HI_MPI_VDEC_Query(chn_bind,&pstStat);
 //        while(pstStat.u32LeftStreamFrames>0)
 //        {
@@ -339,42 +347,52 @@ void Get2Process(int chn)
         }
         //printf("csc finish:\n");
         //printf("293 channel %d \n",Param->s32ChnId+1);
-        IplImage *yframe = cvCreateImageHeader(cvSize(stFrmInfo.stVFrame.u32Width,stFrmInfo.stVFrame.u32Height),IPL_DEPTH_8U,3);
+        //IplImage *yframe = cvCreateImageHeader(cvSize(stFrmInfo.stVFrame.u32Width,stFrmInfo.stVFrame.u32Height),IPL_DEPTH_8U,3);
         //void* pirr=HI_MPI_SYS_Mmap(stDst.u32PhyAddr[0], g_stFrameInfo.stVFrame.u32Width*g_stFrameInfo.stVFrame.u32Height*3);
-        cvSetData(yframe,stDst.pu8VirAddr[0],yframe->widthStep);
+        //cvSetData(yframe,stDst.pu8VirAddr[0],yframe->widthStep);
         //printf("168\n");
         char path[100];
         //cvCvtColor(yframe,yframe,CV_BGR2RGB);
-        sprintf(path,"/mnt/mydir/yangwenquan/lll/3536pic/3536Channel%d.png",Param->s32ChnId+1);
+        //sprintf(path,"/mnt/mydir/yangwenquan/lll/3536pic/3536Channel%d.png",Param->s32ChnId+1);
         /*^^^^^^^^^^^^^^^^^^^^^^^^^^^ time test ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^*/
-        if((Param->s32ChnId+1)==2)
-        {
-            sprintf(path,"/mnt/mydir/yangwenquan/lll/3536pic/frame%d.png",num_fps);
-            //cvSaveImage(path,yframe,0);
-        }
+
         //printf("307 channel %d \n",Param->s32ChnId+1);
         /*^^^^^^^^^^^^^^^^^^^^^^^^^^^ time test ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^*/
         //cvSaveImage(path,yframe,0);
         //printf("171\n");
         int detectNum=0;
         //        //******************image detect*********************//
-        CvMat *mat = cvCreateMat(yframe->height, yframe->width, CV_8UC3);    //注意height和width的顺序
-        cvConvert(yframe, mat);
-        if(mat->rows==0)
-        {
-            printf("307\n");
-        }
-        //printf("319 channel %d \n",Param->s32ChnId+1);
-        detectRun(mat,&detectNum);
-        //        if(Param->s32ChnId+1==18)
-        //        {
-        //            printf("channel %d num is %d\n",Param->s32ChnId+1,detectNum);
-        //        }
-        cvReleaseMat(&mat);
+//        CvMat *mat = cvCreateMatHeader(stFrmInfo.stVFrame.u32Height,stFrmInfo.stVFrame.u32Width, CV_8UC3);    //注意height和width的顺序
+//        cvSetData(mat,stDst.pu8VirAddr[0],mat->step);
+//        //cvConvert(yframe, mat);
+//        if((Param->s32ChnId+1)==2)
+//        {
+//            sprintf(path,"/mnt/mydir/yangwenquan/lll/3536pic/Channel%dframe%d.png",Param->s32ChnId+1,num_fps);
+//            cvSaveImage(path,mat,0);
+//        }
+//        if(mat->rows==0)
+//        {
+//            printf("307\n");
+//        }
+//        //printf("319 channel %d \n",Param->s32ChnId+1);
+//        if((Param->s32ChnId+1)==2)
+//        {
+//            //detectRun(mat,&detectNum,path);
+//            //printf("channel %d num is %d\n",Param->s32ChnId+1,detectNum);
+//        }
+//        else
+//        {
+//            //detectRun(mat,&detectNum,"");
+//        }
+//        //        if(Param->s32ChnId+1==18)
+//        //        {
+//        //            printf("channel %d num is %d\n",Param->s32ChnId+1,detectNum);
+//        //        }
+//        cvReleaseMatHeader(&mat);
         //        //********************image detect*******************//
 
         //        printf("328 channel %d \n",Param->s32ChnId+1);
-        cvReleaseImageHeader(&yframe);
+        //cvReleaseImageHeader(&yframe);
 
 
         //HI_MPI_SYS_MmzFree(stSrc.u32PhyAddr, stSrc.pu8VirAddr);
@@ -445,7 +463,7 @@ HI_S32 SAMPLE_VGS_Decompress_TilePicture(HI_VOID)
 //    }
 
     /************************************************
-    step1:  init SYS and common VB 
+    step1:  init SYS and common VB
     *************************************************/
     SAMPLE_COMM_VDEC_Sysconf(&stVbConf, &stSize);
     s32Ret = SAMPLE_COMM_SYS_Init(&stVbConf);
@@ -454,14 +472,14 @@ HI_S32 SAMPLE_VGS_Decompress_TilePicture(HI_VOID)
         SAMPLE_PRT("init sys fail for %#x!\n", s32Ret);
         goto END1;
     }
-	
+
     /************************************************
     step2:  init mod common VB
     *************************************************/
-    SAMPLE_COMM_VDEC_ModCommPoolConf(&stModVbConf, PT_H264, &stSize, 1);	
+    SAMPLE_COMM_VDEC_ModCommPoolConf(&stModVbConf, PT_H264, &stSize, 1);
     s32Ret = SAMPLE_COMM_VDEC_InitModCommVb(&stModVbConf);
     if(s32Ret != HI_SUCCESS)
-    {	    	
+    {
         SAMPLE_PRT("init mod common vb fail for %#x!\n", s32Ret);
         goto END1;
     }
@@ -477,14 +495,14 @@ HI_S32 SAMPLE_VGS_Decompress_TilePicture(HI_VOID)
         goto END1;
     }
 
-   
+
     /************************************************
     step4:  start VDEC
     *************************************************/
     SAMPLE_COMM_VDEC_ChnAttr(batch, &stVdecChnAttr[0], PT_H264, &stSize);
     s32Ret = SAMPLE_COMM_VDEC_Start(batch, &stVdecChnAttr[0]);
     if(s32Ret != HI_SUCCESS)
-    {	
+    {
         SAMPLE_PRT("start VDEC fail for %#x!\n", s32Ret);
         goto END2;
     }
@@ -494,48 +512,54 @@ HI_S32 SAMPLE_VGS_Decompress_TilePicture(HI_VOID)
     *************************************************/
     SAMPLE_COMM_VDEC_ThreadParam(batch, &stVdecSend[0], &stVdecChnAttr[0], SAMPLE_1080P_H264_PATH);
     int k;
-            strcpy(stVdecSend[0].RtspStr,SAMPLE_1080P_H264_PATH);
-            strcpy(stVdecSend[1].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/2.h264");
-            strcpy(stVdecSend[2].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/3.h264");
-            strcpy(stVdecSend[3].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/4.h264");
-            strcpy(stVdecSend[4].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/5.h264");
-            strcpy(stVdecSend[5].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/6.h264");
-            strcpy(stVdecSend[6].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/7.h264");
-            strcpy(stVdecSend[7].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/8.h264");
-            strcpy(stVdecSend[8].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/9.h264");
-            strcpy(stVdecSend[9].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/10.h264");
-            strcpy(stVdecSend[10].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/11.h264");
-            strcpy(stVdecSend[11].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/12.h264");
-            strcpy(stVdecSend[12].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/13.h264");
-            strcpy(stVdecSend[13].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/14.h264");
-            strcpy(stVdecSend[14].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/15.h264");
-            strcpy(stVdecSend[15].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/16.h264");
-            strcpy(stVdecSend[16].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/17.h264");
-            strcpy(stVdecSend[17].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/18.h264");
-            strcpy(stVdecSend[18].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/19.h264");
-            strcpy(stVdecSend[19].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/20.h264");
-            strcpy(stVdecSend[20].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/21.h264");
-            strcpy(stVdecSend[21].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/22.h264");
-            strcpy(stVdecSend[22].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/23.h264");
-            strcpy(stVdecSend[23].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/24.h264");
-            strcpy(stVdecSend[24].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/25.h264");
-            strcpy(stVdecSend[25].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/26.h264");
-            strcpy(stVdecSend[26].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/27.h264");
-            strcpy(stVdecSend[27].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/28.h264");
-            strcpy(stVdecSend[28].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/29.h264");
-            strcpy(stVdecSend[29].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/30.h264");
+//            strcpy(stVdecSend[0].RtspStr,SAMPLE_1080P_H264_PATH);
+//            strcpy(stVdecSend[1].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/3.h264");
+//            int p;
+//            for(p=2;p<60;p++)
+//            {
+//                strcpy(stVdecSend[p].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/2.h264");
+//            }
+//            strcpy(stVdecSend[59].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[2].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/2.h264");
+//            strcpy(stVdecSend[3].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/2.h264");
+//            strcpy(stVdecSend[4].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[5].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[6].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[7].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[8].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/2.h264");
+//            strcpy(stVdecSend[9].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[10].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[11].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[12].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[13].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[14].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[15].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[16].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/2.h264");
+//            strcpy(stVdecSend[17].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[18].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[19].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[20].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[21].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[22].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[23].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[24].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[25].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[26].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[27].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[28].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[29].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
 
-//        strcpy(stVdecSend[0].RtspStr,"rtsp://admin:hisense.1@10.16.3.124:554/0");
-//        strcpy(stVdecSend[1].RtspStr,"rtsp://admin:hisense.1@10.16.3.124:554/0");
-//        strcpy(stVdecSend[2].RtspStr,"rtsp://admin:hisense.1@10.16.3.124:554/0");
-//        strcpy(stVdecSend[3].RtspStr,"rtsp://admin:hisense.1@10.16.3.124:554/0");
-//        strcpy(stVdecSend[4].RtspStr,"rtsp://admin:hisense.1@10.16.3.124:554/0");
-//        strcpy(stVdecSend[5].RtspStr,"rtsp://admin:hisense.1@10.16.3.125:554/0");
-//        strcpy(stVdecSend[6].RtspStr,"rtsp://admin:hisense.1@10.16.3.125:554/0");
-//        strcpy(stVdecSend[7].RtspStr,"rtsp://admin:hisense.1@10.16.3.125:554/0");
-//        strcpy(stVdecSend[8].RtspStr,"rtsp://admin:hisense.1@10.16.3.125:554/0");
-//        strcpy(stVdecSend[9].RtspStr,"rtsp://admin:hisense.1@10.16.3.125:554/0");
-//        strcpy(stVdecSend[10].RtspStr,"rtsp://admin:hisense.1@10.16.3.121:554/0");
+        strcpy(stVdecSend[0].RtspStr,"rtsp://admin:hisense.1@10.16.3.121:554/0");
+        strcpy(stVdecSend[1].RtspStr,"rtsp://admin:hisense.1@10.16.3.123:554/0");
+        strcpy(stVdecSend[2].RtspStr,"rtsp://admin:hisense.1@10.16.3.123:554/0");
+        strcpy(stVdecSend[3].RtspStr,"rtsp://admin:hisense.1@10.16.3.123:554/0");
+//        strcpy(stVdecSend[4].RtspStr,"rtsp://admin:hisense.1@10.16.3.123:554/0");
+//        strcpy(stVdecSend[5].RtspStr,"rtsp://admin:hisense.1@10.16.3.123:554/0");
+//        strcpy(stVdecSend[6].RtspStr,"rtsp://admin:hisense.1@10.16.3.123:554/0");
+//        strcpy(stVdecSend[7].RtspStr,"rtsp://admin:hisense.1@10.16.3.121:554/0");
+//        strcpy(stVdecSend[8].RtspStr,"rtsp://admin:hisense.1@10.16.3.123:554/0");
+//        strcpy(stVdecSend[9].RtspStr,"rtsp://admin:hisense.1@10.16.3.121:554/0");
+//        strcpy(stVdecSend[10].RtspStr,"rtsp://admin:hisense.1@10.16.3.128:554/0");
 //        strcpy(stVdecSend[11].RtspStr,"rtsp://admin:hisense.1@10.16.3.121:554/0");
 //        strcpy(stVdecSend[12].RtspStr,"rtsp://admin:hisense.1@10.16.3.121:554/0");
 //        strcpy(stVdecSend[13].RtspStr,"rtsp://admin:hisense.1@10.16.3.121:554/0");
@@ -637,17 +661,17 @@ HI_S32 SAMPLE_VGS_Decompress_TilePicture(HI_VOID)
     printf("finish\n");
     SAMPLE_COMM_VDEC_StopSendStream(batch, &stVdecSend[0], &VdecThread[0]);
 
-    
+
 END3:
-    SAMPLE_COMM_VDEC_Stop(1);		
+    SAMPLE_COMM_VDEC_Stop(1);
 
 END2:
     HI_MPI_VB_DestroyPool( hPool );
 
 END1:
-    SAMPLE_COMM_SYS_Exit();	
+    SAMPLE_COMM_SYS_Exit();
 
-    
+
     return s32Ret;
 }
 
@@ -663,7 +687,7 @@ int main(int argc, char *argv[])
     HI_BOOL bExit = HI_FALSE;
     //signal(SIGINT, SAMPLE_VGS_HandleSig);
     //signal(SIGTERM, SAMPLE_VGS_HandleSig);
-  
+
     /******************************************
     1 choose the case
     ******************************************/

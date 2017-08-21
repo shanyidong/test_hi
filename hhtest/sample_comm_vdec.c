@@ -30,7 +30,7 @@ extern "C"{
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
 #include "parm.h"
-/* g_s32VBSource: 0 to module common vb, 1 to private vb, 2 to user vb 
+/* g_s32VBSource: 0 to module common vb, 1 to private vb, 2 to user vb
    And don't forget to set the value of VBSource file "load3535" */
 HI_S32 g_s32VBSource = 0;
 //int Channel__Nums=16;
@@ -47,12 +47,12 @@ VB_POOL g_ahVbPool[VB_MAX_POOLS] = {[0 ... (VB_MAX_POOLS-1)] = VB_INVALID_POOLID
                 stChnStat.u32LeftStreamBytes,\
                 stChnStat.u32LeftStreamFrames,\
                 stChnStat.u32RecvStreamFrames);\
-        }while(0) 
+        }while(0)
 
 
 HI_VOID	SAMPLE_COMM_VDEC_Sysconf(VB_CONF_S *pstVbConf, SIZE_S *pstSize)
 {
-    memset(pstVbConf, 0, sizeof(VB_CONF_S));	  
+    memset(pstVbConf, 0, sizeof(VB_CONF_S));
     pstVbConf->u32MaxPoolCnt = 2;
     pstVbConf->astCommPool[0].u32BlkSize = (pstSize->u32Width * pstSize->u32Height * 3) >> 1;
     pstVbConf->astCommPool[0].u32BlkCnt	 = 20;
@@ -64,33 +64,33 @@ HI_VOID	SAMPLE_COMM_VDEC_Sysconf(VB_CONF_S *pstVbConf, SIZE_S *pstSize)
 }
 
 
-HI_VOID	SAMPLE_COMM_VDEC_ModCommPoolConf(VB_CONF_S *pstModVbConf, 
+HI_VOID	SAMPLE_COMM_VDEC_ModCommPoolConf(VB_CONF_S *pstModVbConf,
     PAYLOAD_TYPE_E enType, SIZE_S *pstSize, HI_S32 s32ChnNum)
 {
     HI_S32 PicSize, PmvSize;
-	
+
     memset(pstModVbConf, 0, sizeof(VB_CONF_S));
     pstModVbConf->u32MaxPoolCnt = 2;
-	
-    VB_PIC_BLK_SIZE(pstSize->u32Width, pstSize->u32Height, enType, PicSize);	
+
+    VB_PIC_BLK_SIZE(pstSize->u32Width, pstSize->u32Height, enType, PicSize);
     pstModVbConf->astCommPool[0].u32BlkSize = PicSize;
     //pstModVbConf->astCommPool[0].u32BlkCnt  = 10*s32ChnNum;
     pstModVbConf->astCommPool[0].u32BlkCnt  = 100*s32ChnNum;
 
-    /* NOTICE: 			   
-    1. if the VDEC channel is H264 channel and support to decode B frame, then you should allocate PmvBuffer 
+    /* NOTICE:
+    1. if the VDEC channel is H264 channel and support to decode B frame, then you should allocate PmvBuffer
     2. if the VDEC channel is MPEG4 channel, then you should allocate PmvBuffer.
     */
     if(PT_H265 == enType)
     {
         VB_PMV_BLK_SIZE(pstSize->u32Width, pstSize->u32Height, enType, PmvSize);
-        
+
         pstModVbConf->astCommPool[1].u32BlkSize = PmvSize;
         pstModVbConf->astCommPool[1].u32BlkCnt  = 5*s32ChnNum;
     }
 }
 
-HI_VOID	SAMPLE_COMM_VDEC_ChnAttr(HI_S32 s32ChnNum, 
+HI_VOID	SAMPLE_COMM_VDEC_ChnAttr(HI_S32 s32ChnNum,
     VDEC_CHN_ATTR_S *pstVdecChnAttr, PAYLOAD_TYPE_E enType, SIZE_S *pstSize)
 {
     HI_S32 i;
@@ -121,7 +121,7 @@ HI_VOID	SAMPLE_COMM_VDEC_ChnAttr(HI_S32 s32ChnNum,
             pstVdecChnAttr[i].stVdecVideoAttr.enMode=VIDEO_MODE_STREAM;
             pstVdecChnAttr[i].stVdecVideoAttr.u32RefFrameNum = 2;
             pstVdecChnAttr[i].stVdecVideoAttr.bTemporalMvpEnable = 1;
-        }    
+        }
     }
 }
 
@@ -177,7 +177,7 @@ HI_VOID	SAMPLE_COMM_VDEC_VoAttr(HI_S32 s32ChnNum, VO_DEV VoDev ,VO_PUB_ATTR_S *p
     {
         u32Width  = 720;
         u32Height = 576;
-    }	
+    }
     pstVoLayerAttr->stDispRect.s32X		  = 0;
     pstVoLayerAttr->stDispRect.s32Y		  = 0;
     pstVoLayerAttr->stDispRect.u32Width	  = u32Width;
@@ -187,14 +187,14 @@ HI_VOID	SAMPLE_COMM_VDEC_VoAttr(HI_S32 s32ChnNum, VO_DEV VoDev ,VO_PUB_ATTR_S *p
     pstVoLayerAttr->bDoubleFrame		  = HI_FALSE;
     pstVoLayerAttr->bClusterMode          = HI_FALSE;
     pstVoLayerAttr->u32DispFrmRt		  = 30;
-    pstVoLayerAttr->enPixFormat			  = PIXEL_FORMAT_YUV_SEMIPLANAR_420;		
+    pstVoLayerAttr->enPixFormat			  = PIXEL_FORMAT_YUV_SEMIPLANAR_420;
 }
 
 
 
 
-HI_VOID SAMPLE_COMM_VDEC_ThreadParam(HI_S32 s32ChnNum, VdecThreadParam *pstVdecSend, 
-	                                                       VDEC_CHN_ATTR_S *pstVdecChnAttr, char *pStreamFileName)
+HI_VOID SAMPLE_COMM_VDEC_ThreadParam(HI_S32 s32ChnNum, VdecThreadParam *pstVdecSend,
+                                                           VDEC_CHN_ATTR_S *pstVdecChnAttr, char *pStreamFileName)
 {
     int i;
 
@@ -247,17 +247,17 @@ HI_S32	SAMPLE_COMM_VDEC_InitModCommVb(VB_CONF_S *pstModVbConf)
         {
             if (pstModVbConf->astCommPool[i].u32BlkSize && pstModVbConf->astCommPool[i].u32BlkCnt)
             {
-                g_ahVbPool[i] = HI_MPI_VB_CreatePool(pstModVbConf->astCommPool[i].u32BlkSize, 
+                g_ahVbPool[i] = HI_MPI_VB_CreatePool(pstModVbConf->astCommPool[i].u32BlkSize,
                     pstModVbConf->astCommPool[i].u32BlkCnt, NULL);
                 if (VB_INVALID_POOLID == g_ahVbPool[i])
                     goto fail;
             }
         }
-        return HI_SUCCESS;               
+        return HI_SUCCESS;
 
     fail:
         for (;i>=0;i--)
-        {   
+        {
             if (VB_INVALID_POOLID != g_ahVbPool[i])
             {
                 s32Ret = HI_MPI_VB_DestroyPool(g_ahVbPool[i]);
@@ -267,7 +267,7 @@ HI_S32	SAMPLE_COMM_VDEC_InitModCommVb(VB_CONF_S *pstModVbConf)
         }
         return HI_FAILURE;
     }
-    
+
     return HI_SUCCESS;
 }
 
@@ -292,7 +292,7 @@ HI_VOID * SAMPLE_COMM_VDEC_SendStream(HI_VOID *pArgs)
 //            return (HI_VOID *)(HI_FAILURE);
 //        }
 //    }
-    //printf("SAMPLE_TEST:chn %d, stream file:%s, bufsize: %d\n", 
+    //printf("SAMPLE_TEST:chn %d, stream file:%s, bufsize: %d\n",
     //pstVdecThreadParam->s32ChnId, pstVdecThreadParam->cFileName, pstVdecThreadParam->s32MinBufSize);
 //    if(pstVdecThreadParam->fpStrm  == NULL)
 //    {
@@ -323,7 +323,7 @@ HI_VOID * SAMPLE_COMM_VDEC_SendStream(HI_VOID *pArgs)
 //        return (HI_VOID *)(HI_FAILURE);
 //    }
     //fflush(stdout);
-	
+
     u64pts = pstVdecThreadParam->u64PtsInit;
     /*start-----------------ffmpeg rtsp-----------------start */
 
@@ -344,16 +344,16 @@ HI_VOID * SAMPLE_COMM_VDEC_SendStream(HI_VOID *pArgs)
 //       return -1;
 //    }
 //    packet=(AVPacket *)av_malloc(sizeof(AVPacket));
-
+    printf("347\n");
     /*end-----------------ffmpeg rtsp-----------------end */
     while (1)
     {
-
+        printf("351 pstVdecThreadParam->switchround %d\n",pstVdecThreadParam->switchround);
         if(pstVdecThreadParam->switchround==3)
         {
            //printf("pstVdecThreadParam->switchround=4;\n");
             pstVdecThreadParam->switchround=4;
-            //continue;
+            continue;
         }
         if(pstVdecThreadParam->switchround==2)
         {
@@ -420,8 +420,13 @@ HI_VOID * SAMPLE_COMM_VDEC_SendStream(HI_VOID *pArgs)
         stStream.bEndOfStream = HI_FALSE;
        //printf("start sending frame.. NO : %d\n",pstVdecThreadParam->s32ChnId+1);
         //printf("******************channel %d  switchround is %d\n",pstVdecThreadParam->s32ChnId+1,pstVdecThreadParam->switchround);
+        if(pstVdecThreadParam->switchround==1)
+        {
         s32Ret=HI_MPI_VDEC_SendStream(pstVdecThreadParam->s32ChnId%batch, &stStream, pstVdecThreadParam->s32MilliSec);
-        //printf("678\n");
+        printf("426\n");
+        //pstVdecThreadParam->switchround=4;
+        }
+
         if (HI_SUCCESS != s32Ret)
         {
             //printf("error send stream %d\n",s32Ret);
@@ -436,6 +441,7 @@ HI_VOID * SAMPLE_COMM_VDEC_SendStream(HI_VOID *pArgs)
         //printf("sending frame done.. NO : %d\n",pstVdecThreadParam->s32ChnId+1);
         usleep(1000);
         //sleep(5);
+        printf("444\n");
     av_free_packet(pstVdecThreadParam->packet);
     }
     avformat_close_input(&pstVdecThreadParam->pFormatCtx);
@@ -443,7 +449,7 @@ HI_VOID * SAMPLE_COMM_VDEC_SendStream(HI_VOID *pArgs)
 //    memset(&stStream, 0, sizeof(VDEC_STREAM_S) );
 //    stStream.bEndOfStream = HI_TRUE;
 //    HI_MPI_VDEC_SendStream(pstVdecThreadParam->s32ChnId, &stStream, -1);
-    
+
     //printf("SAMPLE_TEST:send steam thread %d return ...\n", pstVdecThreadParam->s32ChnId);
     fflush(stdout);
 //    if (pu8Buf != HI_NULL)
@@ -451,7 +457,7 @@ HI_VOID * SAMPLE_COMM_VDEC_SendStream(HI_VOID *pArgs)
 //        free(pu8Buf);
 //    }
     //fclose(pstVdecThreadParam->fpStrm);
-	
+    printf("458\n");
     //return (HI_VOID *)HI_SUCCESS;
     pstVdecThreadParam->switchround=3;
     //pthread_t th;
@@ -485,20 +491,20 @@ HI_VOID * SAMPLE_COMM_VDEC_GetChnLuma(HI_VOID *pArgs)
     HI_CHAR FileName[128];
     HI_CHAR acString[128];
 
-    snprintf(FileName, 128, "LumaPixChn%d.txt", pstVdecThreadParam->s32ChnId);		
+    snprintf(FileName, 128, "LumaPixChn%d.txt", pstVdecThreadParam->s32ChnId);
     fpLuma=fopen(FileName, "w+");
     if(fpLuma == NULL)
     {
         printf("SAMPLE_TEST:can't open file %s in get luma thread:%d\n", pstVdecThreadParam->cFileName, pstVdecThreadParam->s32ChnId);
         return (HI_VOID *)(HI_FAILURE);
-    }	
-	
+    }
+
     while(1)
     {
         switch(pstVdecThreadParam->eCtrlSinal)
         {
             case VDEC_CTRL_START:
-                s32Ret = HI_MPI_VDEC_GetChnLuma(pstVdecThreadParam->s32ChnId, &stLumaPix);	
+                s32Ret = HI_MPI_VDEC_GetChnLuma(pstVdecThreadParam->s32ChnId, &stLumaPix);
                 if (HI_SUCCESS == s32Ret)
                 {
                     memset(acString, 0, 128);
@@ -526,10 +532,10 @@ HI_VOID * SAMPLE_COMM_VDEC_GetChnLuma(HI_VOID *pArgs)
         {
             break;
         }
-    }   
+    }
     printf("SAMPLE_TEST:get LumaPix thread %d return ...\n", pstVdecThreadParam->s32ChnId);
-    fclose(fpLuma);	
-	
+    fclose(fpLuma);
+
     return (HI_VOID *)HI_SUCCESS;
 }
 
@@ -540,57 +546,57 @@ HI_VOID SAMPLE_COMM_VDEC_CmdCtrl(HI_S32 s32ChnNum,VdecThreadParam *pstVdecSend)
 {
     HI_S32 i;
     VDEC_CHN_STAT_S stStat;
-	HI_BOOL /*bIsPause = HI_FALSE, */bVoPause = HI_FALSE;
+    HI_BOOL /*bIsPause = HI_FALSE, */bVoPause = HI_FALSE;
     char c=0;
 
-    while(1)    
+    while(1)
     {
-        printf("\nSAMPLE_TEST:press 'e' to exit; 'p' to pause; 'r' to resume; 'q' to query!\n"); 
+        printf("\nSAMPLE_TEST:press 'e' to exit; 'p' to pause; 'r' to resume; 'q' to query!\n");
         c = getchar();
         if (10 == c)
         {
             continue;
         }
         getchar();
-        if (c == 'e') 
+        if (c == 'e')
             break;
-        else if (c == 'r') 
+        else if (c == 'r')
         {
             if (bVoPause == HI_TRUE)
-            {   
-                HI_MPI_VO_ResumeChn(0, 0);  
+            {
+                HI_MPI_VO_ResumeChn(0, 0);
                 HI_MPI_VO_ResumeChn(1, 0);
-				HI_MPI_VO_ResumeChn(0, 1);  
+                HI_MPI_VO_ResumeChn(0, 1);
                 HI_MPI_VO_ResumeChn(1, 1);
-				HI_MPI_VO_ResumeChn(0, 2);  
+                HI_MPI_VO_ResumeChn(0, 2);
                 HI_MPI_VO_ResumeChn(1, 2);
-				HI_MPI_VO_ResumeChn(0, 3);  
+                HI_MPI_VO_ResumeChn(0, 3);
                 HI_MPI_VO_ResumeChn(1, 3);
                 printf("VO Resume.");
             }
-			bVoPause = HI_FALSE;
+            bVoPause = HI_FALSE;
         }
         else if (c == 'p')
         {
             if(bVoPause == HI_FALSE)
-			{  
-                HI_MPI_VO_PauseChn(0, 0);  
-                HI_MPI_VO_PauseChn(1, 0); 
-				HI_MPI_VO_PauseChn(0, 1);  
+            {
+                HI_MPI_VO_PauseChn(0, 0);
+                HI_MPI_VO_PauseChn(1, 0);
+                HI_MPI_VO_PauseChn(0, 1);
                 HI_MPI_VO_PauseChn(1, 1);
-				HI_MPI_VO_PauseChn(0, 2);  
-                HI_MPI_VO_PauseChn(1, 2); 
-				HI_MPI_VO_PauseChn(0, 3);  
+                HI_MPI_VO_PauseChn(0, 2);
+                HI_MPI_VO_PauseChn(1, 2);
+                HI_MPI_VO_PauseChn(0, 3);
                 HI_MPI_VO_PauseChn(1, 3);
                 printf("VO Pause.");
             }
-            bVoPause = HI_TRUE;              
+            bVoPause = HI_TRUE;
         }
-        else if (c == 'q')        
-        {           
-            for (i=0; i<s32ChnNum; i++)  
-            {              
-                HI_MPI_VDEC_Query(pstVdecSend[i].s32ChnId, &stStat);     
+        else if (c == 'q')
+        {
+            for (i=0; i<s32ChnNum; i++)
+            {
+                HI_MPI_VDEC_Query(pstVdecSend[i].s32ChnId, &stStat);
                 PRINTF_VDEC_CHN_STATE(pstVdecSend[i].s32ChnId, stStat);
             }
         }
@@ -601,7 +607,7 @@ HI_VOID SAMPLE_COMM_VDEC_CmdCtrl(HI_S32 s32ChnNum,VdecThreadParam *pstVdecSend)
 HI_VOID SAMPLE_COMM_VDEC_StartSendStream(HI_S32 s32ChnNum, VdecThreadParam *pstVdecSend, pthread_t *pVdecThread)
 {
     HI_S32  i;
-	
+
     for(i=0; i<s32ChnNum; i++)
     {
         pthread_create(&pVdecThread[i], 0, SAMPLE_COMM_VDEC_SendStream, (HI_VOID *)&pstVdecSend[i]);
@@ -613,9 +619,9 @@ HI_VOID SAMPLE_COMM_VDEC_StopSendStream(HI_S32 s32ChnNum, VdecThreadParam *pstVd
     HI_S32  i;
 
     for(i=0; i<s32ChnNum; i++)
-    {	
-	    HI_MPI_VDEC_StopRecvStream(i);
-        pstVdecSend[i].eCtrlSinal=VDEC_CTRL_STOP;	
+    {
+        HI_MPI_VDEC_StopRecvStream(i);
+        pstVdecSend[i].eCtrlSinal=VDEC_CTRL_STOP;
         pthread_join(pVdecThread[i], HI_NULL);
     }
 }
@@ -627,7 +633,7 @@ HI_VOID SAMPLE_COMM_VDEC_StartGetLuma(HI_S32 s32ChnNum, VdecThreadParam *pstVdec
 
     for(i=0; i<s32ChnNum; i++)
     {
-        pthread_create(&pVdecThread[i+VDEC_MAX_CHN_NUM], 0, SAMPLE_COMM_VDEC_GetChnLuma, (HI_VOID *)&pstVdecSend[i]);	
+        pthread_create(&pVdecThread[i+VDEC_MAX_CHN_NUM], 0, SAMPLE_COMM_VDEC_GetChnLuma, (HI_VOID *)&pstVdecSend[i]);
     }
 }
 
@@ -636,9 +642,9 @@ HI_VOID SAMPLE_COMM_VDEC_StopGetLuma(HI_S32 s32ChnNum, VdecThreadParam *pstVdecS
     HI_S32  i;
 
     for(i=0; i<s32ChnNum; i++)
-    {	
+    {
         pstVdecSend[i].eCtrlSinal = VDEC_CTRL_STOP;
-        pthread_join(pVdecThread[i+VDEC_MAX_CHN_NUM], HI_NULL);     
+        pthread_join(pVdecThread[i+VDEC_MAX_CHN_NUM], HI_NULL);
     }
 }
 
@@ -650,14 +656,16 @@ HI_S32 SAMPLE_COMM_VDEC_Start(HI_S32 s32ChnNum, VDEC_CHN_ATTR_S *pstAttr)
     VDEC_CHN_POOL_S stPool;
 
     for(i=0; i<s32ChnNum; i++)
-    {	
+    {
         if(1 == g_s32VBSource)
         {
-            CHECK_CHN_RET(HI_MPI_VDEC_SetChnVBCnt(i, u32BlkCnt), i, "HI_MPI_VDEC_SetChnVBCnt");				
-        }		
+            printf("660\n");
+            CHECK_CHN_RET(HI_MPI_VDEC_SetChnVBCnt(i, u32BlkCnt), i, "HI_MPI_VDEC_SetChnVBCnt");
+        }
         CHECK_CHN_RET(HI_MPI_VDEC_CreateChn(i, &pstAttr[i]), i, "HI_MPI_VDEC_CreateChn");
         if (2 == g_s32VBSource)
         {
+            printf("666\n");
             stPool.hPicVbPool = g_ahVbPool[0];
             stPool.hPmvVbPool = -1;
             CHECK_CHN_RET(HI_MPI_VDEC_AttachVbPool(i, &stPool), i, "HI_MPI_VDEC_AttachVbPool");
@@ -671,11 +679,11 @@ HI_S32 SAMPLE_COMM_VDEC_Start(HI_S32 s32ChnNum, VDEC_CHN_ATTR_S *pstAttr)
 
 HI_S32 SAMPLE_COMM_VDEC_Stop(HI_S32 s32ChnNum)
 {
-    HI_S32 i;	
+    HI_S32 i;
 
     for(i=0; i<s32ChnNum; i++)
     {
-        CHECK_CHN_RET(HI_MPI_VDEC_StopRecvStream(i), i, "HI_MPI_VDEC_StopRecvStream");       
+        CHECK_CHN_RET(HI_MPI_VDEC_StopRecvStream(i), i, "HI_MPI_VDEC_StopRecvStream");
         CHECK_CHN_RET(HI_MPI_VDEC_DestroyChn(i), i, "HI_MPI_VDEC_DestroyChn");
     }
 
@@ -779,10 +787,10 @@ HI_S32 SAMPLE_COMM_VDEC_MemConfig(HI_VOID)
         stMppChnVDEC.enModId = HI_ID_VDEC;
         stMppChnVDEC.s32DevId = 0;
         stMppChnVDEC.s32ChnId = i;
-        
+
         if(0 == (i%2))
         {
-            pcMmzName = NULL;  
+            pcMmzName = NULL;
         }
         else
         {
@@ -795,7 +803,7 @@ HI_S32 SAMPLE_COMM_VDEC_MemConfig(HI_VOID)
             SAMPLE_PRT("HI_MPI_SYS_SetMemConf ERR !\n");
             return HI_FAILURE;
         }
-    }  
+    }
 
     return HI_SUCCESS;
 }
