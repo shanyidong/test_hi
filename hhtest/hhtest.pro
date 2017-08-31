@@ -14,8 +14,7 @@ SOURCES += \
     sample_comm_sys.c \
     sample_comm_ivs.c \
     sample_comm_audio.c \
-    loadbmp.c \
-
+    loadbmp.c
 
 LIBS+=/home/yangwenquan/libdownload/Hi3536_SDK_V2.0.6.0/mpp_single/lib/libmpi.a
 LIBS+=/home/yangwenquan/libdownload/Hi3536_SDK_V2.0.6.0/mpp_single/lib/libVoiceEngine.a
@@ -26,7 +25,6 @@ LIBS+=/home/yangwenquan/libdownload/Hi3536_SDK_V2.0.6.0/mpp_single/lib/libjpeg6b
 LIBS+=/home/yangwenquan/libdownload/Hi3536_SDK_V2.0.6.0/mpp_single/lib/libive.a
 HEADERS += \
     sample_comm_ivs.h \
-    obj_detect.h \
     parm.h
 LIBS +=/home/yangwenquan/LIB_3536/ffmpeg/libavcodec.so \
 /home/yangwenquan/LIB_3536/ffmpeg/libavfilter.so \

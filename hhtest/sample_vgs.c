@@ -23,7 +23,7 @@
 #include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
-#include "obj_detect.h"
+//#include "obj_detect.h"
 #include "mpi_ive.h"
 #include "hi_comm_ive.h"
 #include "parm.h"
@@ -81,11 +81,53 @@ HI_VOID SAMPLE_VGS_Usage(HI_VOID)
     printf("sample command:");
 }
 int num_fps=0;
+void reset_c(int c)
+{
+    HI_MPI_VDEC_StopRecvStream(c);
+    HI_MPI_VDEC_ResetChn(c);
+    HI_MPI_VDEC_StartRecvStream(c);
+}
+void GetImageLoop(int chn)
+{
+    VIDEO_FRAME_INFO_S g_stFrameInfo_1;
+    while(1)
+    {
+        //p++;
+        //printf("starting get image NO : %d chn_bind: %d\n",Param->s32ChnId+1,chn_bind);
+        HI_BOOL s32Ret = HI_MPI_VDEC_GetImage(chn, &g_stFrameInfo_1, 2000);//10000
+        if(s32Ret != HI_SUCCESS)
+        {
+
+//            Param->switchround=1;
+//            Param->Sending=HI_TRUE;
+            SAMPLE_PRT("get vdec image failed NO : %d  error : %d\n",chn+1,s32Ret);
+            //waittimes++;
+            //Param->Sending=HI_FALSE;
+            //usleep(1000);
+
+                continue;
+
+            //return;
+        }
+
+        if(stVdecSend[chn].Sending=HI_TRUE)
+        {
+            memcpy(&stVdecSend[chn].g_stFrameInfo1,&g_stFrameInfo_1,sizeof(VIDEO_FRAME_INFO_S));
+            stVdecSend[chn].Sending=HI_FALSE;
+            //printf("117\n");
+        }
+
+
+            HI_MPI_VDEC_ReleaseImage(chn, &g_stFrameInfo_1);
+        //break;
+    }
+}
+
 void Get2Process(int chn)
 {
     int n_channel=0;
     n_channel=chn;
-    int p=0;
+    //int p=0;
     while(1)
     {
 
@@ -103,16 +145,18 @@ void Get2Process(int chn)
         VGS_TASK_ATTR_S stTask;
         VdecThreadParam *Param =&stVdecSend[n_channel];
         Param->switchround=1;
+        Param->Sending=HI_TRUE;
+
         if(Param->s32ChnId+1>Channel_Nums)
         {
             printf("s32ChnId fault............\n");
         }
-        VIDEO_FRAME_INFO_S g_stFrameInfo;
+        //VIDEO_FRAME_INFO_S g_stFrameInfo;
         int i;
-        int chn_bind=Param->s32ChnId%batch;
+        //int chn_bind=Param->s32ChnId%batch;
         //    for(i =0;i<1;i++)
         //    {
-        Param->Sending=HI_TRUE;
+        //Param->Sending=HI_TRUE;
         //usleep(50000);
 
         //        while(Param->switchround!=4)
@@ -126,47 +170,46 @@ void Get2Process(int chn)
         //printf("123 channel %d \n",Param->s32ChnId+1);
 
 
-        while(1)
-        {
-            p++;
-            //printf("starting get image NO : %d chn_bind: %d\n",Param->s32ChnId+1,chn_bind);
-            HI_BOOL s32Ret = HI_MPI_VDEC_GetImage(chn_bind, &g_stFrameInfo, 200);
-            if(s32Ret != HI_SUCCESS)
-            {
+//        while(1)
+//        {
+//            p++;
+//            //printf("starting get image NO : %d chn_bind: %d\n",Param->s32ChnId+1,chn_bind);
+//            HI_BOOL s32Ret = HI_MPI_VDEC_GetImage(chn_bind, &g_stFrameInfo, 2000);//10000
+//            if(s32Ret != HI_SUCCESS)
+//            {
 
-                Param->switchround=1;
-                SAMPLE_PRT("get vdec image failed NO : %d round: %d error : %d\n",Param->s32ChnId+1,i+1,s32Ret);
-                waittimes++;
-                //Param->Sending=HI_FALSE;
-                usleep(1000);
+//                Param->switchround=1;
+//                Param->Sending=HI_TRUE;
+//                SAMPLE_PRT("get vdec image failed NO : %d round: %d error : %d\n",Param->s32ChnId+1,i+1,s32Ret);
+//                //waittimes++;
+//                //Param->Sending=HI_FALSE;
+//                //usleep(1000);
 
-                    continue;
+//                    continue;
 
-                //return;
-            }
-            Param->switchround=2;
-            if(p%1==0)//4
-            {
-                break;
-            }
-            else
-            {
-                HI_MPI_VDEC_ReleaseImage(chn_bind, &g_stFrameInfo);
-            }
-        }
+//                //return;
+//            }
+
+
+
+//            if(p%20==0)//4
+//            {
+//                break;
+//            }
+//            else
+//            {
+//                HI_MPI_VDEC_ReleaseImage(chn_bind, &g_stFrameInfo);
+//            }
+//            //break;
+//        }
+//        Param->switchround=2;
+//        Param->Sending=HI_FALSE;//2
+//        pthread_t tt;
+//        pthread_create(&tt, 0, reset_c,chn_bind);
 //                while(1)
 //                {
 //                    HI_MPI_VDEC_Query(chn_bind,&pstStat);
-//                    if(pstStat.u32LeftStreamFrames==0)
-//                    {
-//                        HI_BOOL s32Ret = HI_MPI_VDEC_GetImage(chn_bind, &g_stFrameInfo, 2000);
-//                        if(s32Ret != HI_SUCCESS)
-//                        {
-//                            SAMPLE_PRT("156 get vdec image failed NO : %d round: %d error : %d\n",Param->s32ChnId+1,i+1,s32Ret);
-
-//                        }
-//                    }
-//                    else if(pstStat.u32LeftStreamFrames=1)
+//                    if(pstStat.u32LeftStreamFrames=1)
 //                    {
 //                    HI_BOOL s32Ret = HI_MPI_VDEC_GetImage(chn_bind, &g_stFrameInfo, 2000);
 //                    if(s32Ret != HI_SUCCESS)
@@ -179,6 +222,7 @@ void Get2Process(int chn)
 //                    }
 //                    else
 //                    {
+//                        printf("189\n");
 //                        break;
 //                    }
 
@@ -186,13 +230,15 @@ void Get2Process(int chn)
 //                    }
 //                    else
 //                    {
-//                        HI_MPI_VDEC_GetImage(chn_bind, &g_stFrameInfo, 2000);
+//                        printf("197\n");
 //                        HI_MPI_VDEC_ReleaseImage(chn_bind, &g_stFrameInfo);
+//                        HI_MPI_VDEC_GetImage(chn_bind, &g_stFrameInfo, 0);
+
 //                    }
 //                }
         //printf("getimage done NO : %d round: %d\n",Param->s32ChnId+1,i+1);
         //printf("146 channel %d \n",Param->s32ChnId+1);
-        Param->Sending=HI_FALSE;
+        //Param->Sending=HI_FALSE;
 
         //HI_MPI_VDEC_Query(chn_bind,&pstStat);
 //        while(pstStat.u32LeftStreamFrames>0)
@@ -205,7 +251,18 @@ void Get2Process(int chn)
         //printf("Query chnn %d u32LeftStreamFrames is %d\n",chn_bind,pstStat.u32LeftStreamFrames);
         //printf("chnn %d\n",Param->s32ChnId+1);
         //test
-        if((Param->s32ChnId+1)==2)
+        while(1)
+        {
+            if(Param->Sending==HI_FALSE)
+            {
+                break;
+            }
+            else
+            {
+                usleep(10);
+            }
+        }
+        if((Param->s32ChnId+1)==1)
         {
             num_fps++;
         }
@@ -228,11 +285,12 @@ void Get2Process(int chn)
             SAMPLE_PRT("Mem dev may not open\n");
             HI_MPI_VB_ReleaseBlock(g_stMem.hBlock);
             g_bUserCommVb = HI_FALSE;
-            HI_MPI_VDEC_ReleaseImage(0, &g_stFrameInfo);
+            //HI_MPI_VDEC_ReleaseImage(0, &g_stFrameInfo);
             g_bUserVdecBuf = HI_FALSE;
             //goto END3;
+            continue;
         }
-
+        //Param->Sending=HI_FALSE;
         memset(&stFrmInfo.stVFrame, 0, sizeof(VIDEO_FRAME_S));
         stFrmInfo.stVFrame.u32PhyAddr[0] = g_stMem.u32PhyAddr;
         stFrmInfo.stVFrame.u32PhyAddr[1] = stFrmInfo.stVFrame.u32PhyAddr[0] + u32LumaSize;
@@ -265,25 +323,27 @@ void Get2Process(int chn)
             //SAMPLE_PRT("HI_MPI_VGS_BeginJob failed %#x\n", s32Ret);
             HI_MPI_VB_ReleaseBlock(g_stMem.hBlock);
             g_bUserCommVb = HI_FALSE;
-            HI_MPI_VDEC_ReleaseImage(0, &g_stFrameInfo);
+            //HI_MPI_VDEC_ReleaseImage(0, &g_stFrameInfo);
             g_bUserVdecBuf = HI_FALSE;
             //goto END3;
+            continue;
         }
 
-        memcpy(&stTask.stImgIn,&g_stFrameInfo,sizeof(VIDEO_FRAME_INFO_S));
+        memcpy(&stTask.stImgIn,&Param->g_stFrameInfo1,sizeof(VIDEO_FRAME_INFO_S));
 
         memcpy(&stTask.stImgOut ,&stFrmInfo,sizeof(VIDEO_FRAME_INFO_S));
         s32Ret = HI_MPI_VGS_AddScaleTask(hHandle, &stTask);
         if(s32Ret != HI_SUCCESS)
         {
-            printf("HI_MPI_VGS_AddScaleTask failed %x\n",s32Ret);
+            printf("HI_MPI_VGS_AddScaleTask failed %x chnn %d\n",s32Ret,Param->s32ChnId+1);
             //SAMPLE_PRT("HI_MPI_VGS_AddScaleTask failed\n");
             HI_MPI_VGS_CancelJob(hHandle);
             HI_MPI_VB_ReleaseBlock(g_stMem.hBlock);
             g_bUserCommVb = HI_FALSE;
-            HI_MPI_VDEC_ReleaseImage(0, &g_stFrameInfo);
+            //HI_MPI_VDEC_ReleaseImage(0, &g_stFrameInfo);
             g_bUserVdecBuf = HI_FALSE;
             //goto END3;
+            continue;
         }
 
 
@@ -297,9 +357,10 @@ void Get2Process(int chn)
             HI_MPI_VGS_CancelJob(hHandle);
             HI_MPI_VB_ReleaseBlock(g_stMem.hBlock);
             g_bUserCommVb = HI_FALSE;
-            HI_MPI_VDEC_ReleaseImage(0, &g_stFrameInfo);
+            //HI_MPI_VDEC_ReleaseImage(0, &g_stFrameInfo);
             g_bUserVdecBuf = HI_FALSE;
             //goto END3;
+            continue;
         }
 
 
@@ -360,34 +421,40 @@ void Get2Process(int chn)
         /*^^^^^^^^^^^^^^^^^^^^^^^^^^^ time test ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^*/
         //cvSaveImage(path,yframe,0);
         //printf("171\n");
-        int detectNum=0;
-        //        //******************image detect*********************//
+//        int detectNum=0;
+//        //        //******************image detect*********************//
 //        CvMat *mat = cvCreateMatHeader(stFrmInfo.stVFrame.u32Height,stFrmInfo.stVFrame.u32Width, CV_8UC3);    //注意height和width的顺序
 //        cvSetData(mat,stDst.pu8VirAddr[0],mat->step);
+//        //cvSetData(mat,HI_MPI_SYS_Mmap(stDst.u32PhyAddr, stFrmInfo.stVFrame.u32Width*stFrmInfo.stVFrame.u32Height*3),mat->step);
+//        //CvMat *mat1=cvCloneMat(mat);
 //        //cvConvert(yframe, mat);
-//        if((Param->s32ChnId+1)==2)
+//        if((Param->s32ChnId+1)==1)
 //        {
 //            sprintf(path,"/mnt/mydir/yangwenquan/lll/3536pic/Channel%dframe%d.png",Param->s32ChnId+1,num_fps);
-//            cvSaveImage(path,mat,0);
+//            //cvSaveImage(path,mat,0);
 //        }
 //        if(mat->rows==0)
 //        {
 //            printf("307\n");
 //        }
 //        //printf("319 channel %d \n",Param->s32ChnId+1);
-//        if((Param->s32ChnId+1)==2)
+//        //detectRun(mat,&detectNum,"");
+//        if((Param->s32ChnId+1)==1)
 //        {
-//            //detectRun(mat,&detectNum,path);
+//          detectRun(mat,&detectNum,path);
+//            //sleep(1);
 //            //printf("channel %d num is %d\n",Param->s32ChnId+1,detectNum);
 //        }
 //        else
 //        {
-//            //detectRun(mat,&detectNum,"");
+//            //sleep(1);
+//            detectRun(mat,&detectNum,"");
 //        }
 //        //        if(Param->s32ChnId+1==18)
 //        //        {
 //        //            printf("channel %d num is %d\n",Param->s32ChnId+1,detectNum);
 //        //        }
+//        //cvReleaseMat(&mat1);
 //        cvReleaseMatHeader(&mat);
         //        //********************image detect*******************//
 
@@ -406,10 +473,10 @@ void Get2Process(int chn)
         g_bUserCommVb = HI_FALSE;
         g_bUserVdecBuf = HI_FALSE;
         HI_MPI_VB_ReleaseBlock(g_stMem.hBlock);
-        HI_MPI_VDEC_ReleaseImage(chn_bind, &g_stFrameInfo);
 
+        //HI_MPI_VDEC_ReleaseImage(chn_bind, &g_stFrameInfo);
         /* --------------------convert image-------------------------------*/
-        fflush(stdout);
+        //fflush(stdout);
         //}
 
 
@@ -445,7 +512,8 @@ HI_S32 SAMPLE_VGS_Decompress_TilePicture(HI_VOID)
 
     pthread_t   VdecThread[2*VDEC_MAX_CHN_NUM];
 
-    pthread_t Threadn[batch];
+    pthread_t Threadn[Channel_Nums];
+    pthread_t Threadn1[Channel_Nums];
     stSize.u32Width  = HD_WIDTH;
     stSize.u32Height = HD_HEIGHT;
 
@@ -499,8 +567,8 @@ HI_S32 SAMPLE_VGS_Decompress_TilePicture(HI_VOID)
     /************************************************
     step4:  start VDEC
     *************************************************/
-    SAMPLE_COMM_VDEC_ChnAttr(batch, &stVdecChnAttr[0], PT_H264, &stSize);
-    s32Ret = SAMPLE_COMM_VDEC_Start(batch, &stVdecChnAttr[0]);
+    SAMPLE_COMM_VDEC_ChnAttr(Channel_Nums, &stVdecChnAttr[0], PT_H264, &stSize);
+    s32Ret = SAMPLE_COMM_VDEC_Start(Channel_Nums, &stVdecChnAttr[0]);
     if(s32Ret != HI_SUCCESS)
     {
         SAMPLE_PRT("start VDEC fail for %#x!\n", s32Ret);
@@ -511,17 +579,20 @@ HI_S32 SAMPLE_VGS_Decompress_TilePicture(HI_VOID)
     step4:  send stream to VDEC
     *************************************************/
     SAMPLE_COMM_VDEC_ThreadParam(batch, &stVdecSend[0], &stVdecChnAttr[0], SAMPLE_1080P_H264_PATH);
+
+
+    //HI_MPI_VDEC_SetChnParam(0,)
     int k;
 //            strcpy(stVdecSend[0].RtspStr,SAMPLE_1080P_H264_PATH);
-//            strcpy(stVdecSend[1].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/3.h264");
+//            strcpy(stVdecSend[1].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/2.h264");
 //            int p;
 //            for(p=2;p<60;p++)
 //            {
 //                strcpy(stVdecSend[p].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/2.h264");
 //            }
 //            strcpy(stVdecSend[59].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
-//            strcpy(stVdecSend[2].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/2.h264");
-//            strcpy(stVdecSend[3].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/2.h264");
+//            strcpy(stVdecSend[2].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/man.h264");
+//            strcpy(stVdecSend[3].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/3.h264");
 //            strcpy(stVdecSend[4].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
 //            strcpy(stVdecSend[5].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
 //            strcpy(stVdecSend[6].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
@@ -535,7 +606,7 @@ HI_S32 SAMPLE_VGS_Decompress_TilePicture(HI_VOID)
 //            strcpy(stVdecSend[14].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
 //            strcpy(stVdecSend[15].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
 //            strcpy(stVdecSend[16].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/2.h264");
-//            strcpy(stVdecSend[17].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+//            strcpy(stVdecSend[17].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/3.h264");
 //            strcpy(stVdecSend[18].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
 //            strcpy(stVdecSend[19].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
 //            strcpy(stVdecSend[20].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
@@ -548,37 +619,40 @@ HI_S32 SAMPLE_VGS_Decompress_TilePicture(HI_VOID)
 //            strcpy(stVdecSend[27].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
 //            strcpy(stVdecSend[28].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
 //            strcpy(stVdecSend[29].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
-
-        strcpy(stVdecSend[0].RtspStr,"rtsp://admin:hisense.1@10.16.3.121:554/0");
-        strcpy(stVdecSend[1].RtspStr,"rtsp://admin:hisense.1@10.16.3.123:554/0");
-        strcpy(stVdecSend[2].RtspStr,"rtsp://admin:hisense.1@10.16.3.123:554/0");
-        strcpy(stVdecSend[3].RtspStr,"rtsp://admin:hisense.1@10.16.3.123:554/0");
-//        strcpy(stVdecSend[4].RtspStr,"rtsp://admin:hisense.1@10.16.3.123:554/0");
-//        strcpy(stVdecSend[5].RtspStr,"rtsp://admin:hisense.1@10.16.3.123:554/0");
-//        strcpy(stVdecSend[6].RtspStr,"rtsp://admin:hisense.1@10.16.3.123:554/0");
-//        strcpy(stVdecSend[7].RtspStr,"rtsp://admin:hisense.1@10.16.3.121:554/0");
-//        strcpy(stVdecSend[8].RtspStr,"rtsp://admin:hisense.1@10.16.3.123:554/0");
-//        strcpy(stVdecSend[9].RtspStr,"rtsp://admin:hisense.1@10.16.3.121:554/0");
-//        strcpy(stVdecSend[10].RtspStr,"rtsp://admin:hisense.1@10.16.3.128:554/0");
-//        strcpy(stVdecSend[11].RtspStr,"rtsp://admin:hisense.1@10.16.3.121:554/0");
-//        strcpy(stVdecSend[12].RtspStr,"rtsp://admin:hisense.1@10.16.3.121:554/0");
-//        strcpy(stVdecSend[13].RtspStr,"rtsp://admin:hisense.1@10.16.3.121:554/0");
-//        strcpy(stVdecSend[14].RtspStr,"rtsp://admin:hisense.1@10.16.3.121:554/0");
-//        strcpy(stVdecSend[15].RtspStr,"rtsp://admin:hisense.1@10.16.3.128:554/0");
-//        strcpy(stVdecSend[16].RtspStr,"rtsp://admin:hisense.1@10.16.3.128:554/0");
-//        strcpy(stVdecSend[17].RtspStr,"rtsp://admin:hisense.1@10.16.3.128:554/0");
-//        strcpy(stVdecSend[18].RtspStr,"rtsp://admin:hisense.1@10.16.3.128:554/0");
-//        strcpy(stVdecSend[19].RtspStr,"rtsp://admin:hisense.1@10.16.3.128:554/0");
-//        strcpy(stVdecSend[20].RtspStr,"rtsp://admin:hisense.1@10.16.3.127:554/0");
-//        strcpy(stVdecSend[21].RtspStr,"rtsp://admin:hisense.1@10.16.3.127:554/0");
-//        strcpy(stVdecSend[22].RtspStr,"rtsp://admin:hisense.1@10.16.3.127:554/0");
-//        strcpy(stVdecSend[23].RtspStr,"rtsp://admin:hisense.1@10.16.3.127:554/0");
-//        strcpy(stVdecSend[24].RtspStr,"rtsp://admin:hisense.1@10.16.3.127:554/0");
-//        strcpy(stVdecSend[25].RtspStr,"rtsp://admin:abcd1234@10.16.3.137:554/0");
-//        strcpy(stVdecSend[26].RtspStr,"rtsp://admin:abcd1234@10.16.3.137:554/0");
-//        strcpy(stVdecSend[27].RtspStr,"rtsp://admin:abcd1234@10.16.3.137:554/0");
-//        strcpy(stVdecSend[28].RtspStr,"rtsp://admin:abcd1234@10.16.3.137:554/0");
-//        strcpy(stVdecSend[29].RtspStr,"rtsp://admin:abcd1234@10.16.3.137:554/0");
+          strcpy(stVdecSend[1].RtspStr,"rtsp://admin:hisense.1@192.168.1.65:554/0");
+          strcpy(stVdecSend[0].RtspStr,"rtsp://admin:hik12345@192.168.1.64:554/0");
+          //strcpy(stVdecSend[1].RtspStr,"rtsp://admin:hisense.1@192.168.1.65:554/0");
+          strcpy(stVdecSend[2].RtspStr,"rtsp://admin:hisense.1@192.168.1.65:554/0");
+          strcpy(stVdecSend[3].RtspStr,"rtsp://admin:hisense.1@192.168.1.65:554/0");
+//        strcpy(stVdecSend[1].RtspStr,"rtsp://admin:hisense.1@10.16.3.124:554/0");
+//        strcpy(stVdecSend[2].RtspStr,"rtsp://admin:hisense.1@10.16.3.125:554/0");
+//        strcpy(stVdecSend[3].RtspStr,"rtsp://admin:hisense.1@10.16.3.126:554/0");
+        strcpy(stVdecSend[4].RtspStr,"rtsp://admin:hisense.1@192.168.1.65:554/0");
+        strcpy(stVdecSend[5].RtspStr,"rtsp://admin:hik12345@192.168.1.64:554/0");
+        strcpy(stVdecSend[6].RtspStr,"rtsp://admin:hik12345@192.168.1.64:554/0");
+        strcpy(stVdecSend[7].RtspStr,"rtsp://admin:hik12345@192.168.1.64:554/0");
+        strcpy(stVdecSend[8].RtspStr,"rtsp://admin:hik12345@192.168.1.64:554/0");
+        strcpy(stVdecSend[9].RtspStr,"rtsp://admin:hisense.1@192.168.1.65:554/0");
+        strcpy(stVdecSend[10].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/1.h264");
+        strcpy(stVdecSend[11].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/2.h264");
+        strcpy(stVdecSend[12].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/3.h264");
+        strcpy(stVdecSend[13].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/11.h264");
+        strcpy(stVdecSend[14].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/12.h264");
+        strcpy(stVdecSend[15].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/13.h264");
+        strcpy(stVdecSend[16].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/14.h264");
+        strcpy(stVdecSend[17].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/15.h264");
+        strcpy(stVdecSend[18].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/16.h264");
+        strcpy(stVdecSend[19].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/12.h264");
+        strcpy(stVdecSend[20].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/17.h264");
+        strcpy(stVdecSend[21].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/18.h264");
+        strcpy(stVdecSend[22].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/19.h264");
+        strcpy(stVdecSend[23].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/20.h264");
+        strcpy(stVdecSend[24].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/21.h264");
+        strcpy(stVdecSend[25].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/22.h264");
+        strcpy(stVdecSend[26].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/23.h264");
+        strcpy(stVdecSend[27].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/24.h264");
+        strcpy(stVdecSend[28].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/25.h264");
+        strcpy(stVdecSend[29].RtspStr,"/mnt/mydir/yangwenquan/lll/264file/26.h264");
         av_register_all();
         avformat_network_init();
     for(k=0;k<Channel_Nums;k++)
@@ -611,7 +685,7 @@ HI_S32 SAMPLE_VGS_Decompress_TilePicture(HI_VOID)
             stVdecSend[k].bLoopSend       = HI_TRUE;
             stVdecSend[k].enType          = PT_H264;
             stVdecSend[k].s32MinBufSize   = (3 * stSize.u32Width * stSize.u32Height)>>1;
-            stVdecSend[k].s32StreamMode=VIDEO_MODE_STREAM;
+            stVdecSend[k].s32StreamMode=VIDEO_MODE_FRAME;
             stVdecSend[k].Sending=HI_FALSE;
             stVdecSend[k].switchround=4;
 //        }
@@ -627,11 +701,12 @@ HI_S32 SAMPLE_VGS_Decompress_TilePicture(HI_VOID)
     {
         c_Num=Channel_Nums;
     }
-    SAMPLE_COMM_VDEC_StartSendStream(c_Num, &stVdecSend[0], &VdecThread[0]);
+    SAMPLE_COMM_VDEC_StartSendStream(Channel_Nums, &stVdecSend[0], &VdecThread[0]);
     u32PicLStride = CEILING_2_POWER(u32OutWidth, SAMPLE_SYS_ALIGN_WIDTH);
     u32PicCStride = CEILING_2_POWER(u32OutWidth, SAMPLE_SYS_ALIGN_WIDTH);
     u32LumaSize = (u32PicLStride * u32OutHeight);
     u32ChrmSize = (u32PicCStride * u32OutHeight) >> 2;
+
     //***********************************//
     //algorithm initial//
 //    cv::CascadeClassifier cascade;
@@ -642,10 +717,35 @@ HI_S32 SAMPLE_VGS_Decompress_TilePicture(HI_VOID)
 //        return -1;
 //    }
     //***********************************//
+   // sleep(2);
+
 
     int chn_i;
-        for(chn_i=0;chn_i<c_Num;chn_i++)
+    int chn_j;
+    for(chn_j=0;chn_j<Channel_Nums;chn_j++)
+    {
+        pthread_create(&Threadn1[chn_j], 0, GetImageLoop,chn_j);
+    }
+    sleep(2);
+        for(chn_i=0;chn_i<batch;chn_i++)
             {
+//            VDEC_CHN_PARAM_S parm_s;
+//            s32Ret=HI_MPI_VDEC_GetChnParam(chn_i,&parm_s);
+//            if(s32Ret != HI_SUCCESS)
+//            {
+//                SAMPLE_PRT("start HI_MPI_VDEC_GetChnParam fail for %#x!\n", s32Ret);
+//            }
+//            parm_s.s32DisplayFrameNum=1;
+//            s32Ret=HI_MPI_VDEC_SetChnParam(chn_i,&parm_s);
+//            if(s32Ret != HI_SUCCESS)
+//            {
+//                SAMPLE_PRT("start HI_MPI_VDEC_SetChnParam fail for %#x!\n", s32Ret);
+//            }
+//            else
+//            {
+//                //SAMPLE_PRT("start HI_MPI_VDEC_SetChnParam success!\n");
+//            }
+
                 pthread_create(&Threadn[chn_i], 0, Get2Process,chn_i);
             }
         printf("###-------------------- service start  --------------------###\n");

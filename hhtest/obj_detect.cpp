@@ -21,7 +21,7 @@ using namespace cv;
         }
         CascadeClassifier cascade;
         string cascadeName;
-        cascadeName = "model//cascade-ped-HOG_Classfier_DAB-2.xml";
+        cascadeName = "//mnt//mydir//yangwenquan//lll//xml//hog//cascade-HOG_Classfier_DAB-3-15.xml";
         //printf("load cascade ..\n");
         if (!cascade.load(cascadeName))
         {
@@ -44,11 +44,11 @@ using namespace cv;
         //resize(frame1, smallImg, Size(), scale, scale, INTER_LINEAR);
         vector<Rect> objs;
         cascade.detectMultiScale(frame1, objs,
-                                1.2, 10, 0
+                                1.3, 3, 0
                                 //|CASCADE_FIND_BIGGEST_OBJECT
                                 //|CASCADE_DO_ROUGH_SEARCH
                                 |CASCADE_SCALE_IMAGE,
-                                Size(30,50));
+                                Size(30,30));
     //*********************************
     //nms begin
     //*********************************
@@ -110,10 +110,11 @@ using namespace cv;
         }
         if(strlen(path)>0)
         {
-        //imwrite(path,frame1);
+            imwrite(path,frame1);
         }
 
     }
+    //imwrite(path,frame1);
         return *detectNum;
     }
 

@@ -276,6 +276,7 @@ typedef struct hiVdecThreadParam
     AVFormatContext	*pFormatCtx;
     AVDictionary* options ;
     AVPacket *packet;
+    VIDEO_FRAME_INFO_S g_stFrameInfo1;
 }VdecThreadParam;
 
 typedef enum hiAudioCodecType

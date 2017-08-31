@@ -3,5 +3,5 @@
 
 #endif // PARM_H
 
-#define Channel_Nums 2
-#define batch 1
+#define Channel_Nums 30
+#define batch 30
